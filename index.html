@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>HANDA Cue Cards</title>
+<style>
+  :root{
+    --ink:#12242e;
+    --paper:#f3ede0;
+    --card:#fbf7ee;
+    --line:#d8cdb6;
+    --copper:#b45733;
+    --copper-soft:#e8d3c4;
+    --teal:#1f6b6b;
+    --right:#1f7a4d;
+    --right-soft:#d6ecdc;
+    --muted:#6d6754;
+    --shadow:rgba(30,40,45,.16);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:radial-gradient(120% 80% at 50% -10%, #f8f2e6 0%, var(--paper) 55%);
+    color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    min-height:100vh;min-height:100dvh;
+    overflow-x:hidden;
+  }
+  .hidden{display:none !important;}
+
+  /* ================= HOME / CHAPTER LIST ================= */
+  #home{padding:34px 20px calc(30px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto;}
+  .brand{
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;
+    font-size:12px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--copper);margin:0 0 6px;
+  }
+  #home h1{margin:0;font-size:30px;font-weight:600;letter-spacing:-.01em;}
+  #home .sub{color:var(--muted);font-size:15px;margin:8px 0 26px;line-height:1.4;}
+  .spark{width:54px;height:3px;margin:14px 0 0;border-radius:2px;
+    background:linear-gradient(90deg,var(--copper),var(--teal));}
+  .chapter-list{display:flex;flex-direction:column;gap:14px;margin-top:26px;}
+  .ch-card{
+    text-align:left;width:100%;cursor:pointer;
+    background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:18px 18px;display:flex;align-items:center;gap:16px;
+    box-shadow:0 6px 18px var(--shadow);
+    transition:transform .15s ease, box-shadow .15s ease;
+    font-family:inherit;color:var(--ink);
+  }
+  .ch-card:active{transform:scale(.985);}
+  .ch-index{
+    flex:0 0 auto;width:52px;height:52px;border-radius:14px;
+    background:linear-gradient(135deg,var(--copper),var(--teal));
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:15px;font-weight:700;
+    letter-spacing:.02em;
+  }
+  .ch-body{flex:1;min-width:0;}
+  .ch-name{font-size:18px;font-weight:600;line-height:1.2;}
+  .ch-meta{font-size:13px;color:var(--muted);margin-top:3px;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;}
+  .ch-arrow{color:var(--copper);font-size:22px;flex:0 0 auto;}
+
+  /* ================= DECK / CARDS ================= */
+  #deck{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
+  .topbar{
+    display:flex;align-items:center;gap:12px;
+    padding:16px 18px 8px;
+  }
+  .back-btn{
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:14px;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:9px 13px;cursor:pointer;color:var(--ink);
+  }
+  .deck-title{font-size:16px;font-weight:600;flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .jump-btn{
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:14px;
+    background:var(--ink);color:var(--paper);border:none;border-radius:10px;
+    padding:9px 13px;cursor:pointer;
+  }
+  .meta{display:flex;align-items:center;padding:6px 20px 4px;}
+  .counter{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:13px;color:var(--muted);}
+  .counter b{color:var(--ink);font-size:16px;}
+  .track{flex:1;height:4px;margin:0 14px;border-radius:2px;background:var(--copper-soft);overflow:hidden;}
+  .track > div{height:100%;width:0;border-radius:2px;
+    background:linear-gradient(90deg,var(--copper),var(--teal));transition:width .25s ease;}
+
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 18px 4px;perspective:1400px;}
+  .card{position:relative;width:100%;max-width:440px;min-height:54vh;
+    transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.15,.2,1);cursor:pointer;}
+  .card.flipped{transform:rotateY(180deg);}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:var(--card);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 14px 34px var(--shadow),0 2px 0 #fff inset;
+    padding:22px 20px;display:flex;flex-direction:column;overflow:hidden;}
+  .face::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;
+    background:linear-gradient(90deg,var(--copper),var(--teal));}
+  .qnum{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.14em;
+    color:var(--copper);text-transform:uppercase;margin-bottom:12px;}
+  .qtext{font-size:19px;line-height:1.32;font-weight:500;margin-bottom:16px;}
+  .options{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;overflow-y:auto;}
+  .opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;
+    padding:11px 13px;background:#fff;font-size:15.5px;line-height:1.28;transition:all .2s ease;}
+  .opt .lbl{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-weight:700;color:var(--teal);flex:0 0 auto;min-width:16px;}
+  .opt.correct{background:var(--right-soft);border-color:var(--right);}
+  .opt.correct .lbl{color:var(--right);}
+  .opt.correct::after{content:"✓";margin-left:auto;color:var(--right);font-weight:700;align-self:center;}
+  .back-tag{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
+  .answer-big{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;text-align:center;}
+  .badge{width:104px;height:104px;border-radius:50%;background:var(--right-soft);border:3px solid var(--right);
+    display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:700;color:var(--right);
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;}
+  .answer-text{font-size:20px;line-height:1.35;font-weight:500;max-width:90%;}
+  .back-face{transform:rotateY(180deg);}
+  .tap-hint{text-align:center;font-size:12px;color:var(--muted);
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;letter-spacing:.05em;margin-top:10px;}
+
+  .nav{display:flex;gap:12px;padding:12px 20px calc(18px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto;width:100%;}
+  .nav button{flex:1;font-family:inherit;font-size:16px;font-weight:600;padding:15px;border-radius:14px;cursor:pointer;
+    border:1px solid var(--line);background:var(--card);color:var(--ink);transition:all .16s ease;}
+  .nav button:active{transform:scale(.97);}
+  .nav button.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .nav button:disabled{opacity:.4;cursor:default;}
+
+  /* ================= JUMP OVERLAY ================= */
+  .overlay{position:fixed;inset:0;background:rgba(18,36,46,.55);display:flex;align-items:center;justify-content:center;
+    padding:24px;z-index:50;}
+  .sheet{background:var(--card);border-radius:20px;padding:24px;width:100%;max-width:360px;
+    box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  .sheet h3{margin:0 0 4px;font-size:19px;}
+  .sheet p{margin:0 0 16px;font-size:13px;color:var(--muted);}
+  .sheet input{width:100%;font-size:20px;font-family:"SF Mono",ui-monospace,monospace;text-align:center;
+    padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:16px;}
+  .sheet-actions{display:flex;gap:10px;}
+  .sheet-actions button{flex:1;font-family:inherit;font-size:15px;font-weight:600;padding:12px;border-radius:12px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);}
+  .sheet-actions button.go{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .jump-err{color:var(--copper);font-size:13px;min-height:16px;margin:-8px 0 8px;text-align:center;}
+
+  /* notice banner when a searched Q was skipped */
+  .notice{
+    max-width:440px;margin:0 auto 2px;width:100%;
+    background:var(--copper-soft);border:1px solid var(--copper);
+    color:#7a3218;border-radius:12px;padding:9px 14px;
+    font-size:13.5px;line-height:1.3;
+    display:flex;align-items:center;gap:8px;
+  }
+  .notice.hidden{display:none;}
+  .notice b{font-family:"SF Mono",ui-monospace,Menlo,monospace;}
+
+  @media (prefers-reduced-motion: reduce){.card{transition:none;}}
+</style>
+</head>
+<body>
+
+  <!-- ============ HOME ============ -->
+  <section id="home">
+    <p class="brand">Electrical Engineering · Objective</p>
+    <h1>HANDA Cue Cards</h1>
+    <p class="sub">Tap a chapter to start. Flip each card to reveal the answer.</p>
+    <div class="spark"></div>
+    <div class="chapter-list" id="chapterList"></div>
+  </section>
+
+  <!-- ============ DECK ============ -->
+  <section id="deck" class="hidden">
+    <div class="topbar">
+      <button class="back-btn" id="backBtn">‹ Chapters</button>
+      <div class="deck-title" id="deckTitle"></div>
+      <button class="jump-btn" id="jumpBtn">Go to Q</button>
+    </div>
+    <div class="meta">
+      <span class="counter"><b id="cur">1</b> / <span id="total">0</span></span>
+      <div class="track"><div id="fill"></div></div>
+    </div>
+    <div class="notice hidden" id="notice"></div>
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="face front-face">
+          <div class="qnum" id="qnum">Q1</div>
+          <div class="qtext" id="qtext"></div>
+          <ul class="options" id="options"></ul>
+        </div>
+        <div class="face back-face">
+          <div class="back-tag">Answer</div>
+          <div class="answer-big">
+            <div class="badge" id="ansBadge">A</div>
+            <div class="answer-text" id="ansText"></div>
+          </div>
+          <div class="tap-hint">tap to flip back</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav">
+      <button id="prevBtn">‹ Prev</button>
+      <button id="nextBtn" class="primary">Next ›</button>
+    </div>
+  </section>
+
+  <!-- ============ JUMP OVERLAY ============ -->
+  <div class="overlay hidden" id="jumpOverlay">
+    <div class="sheet">
+      <h3>Jump to question</h3>
+      <p>Enter a question number from this chapter.</p>
+      <input type="number" id="jumpInput" inputmode="numeric" placeholder="e.g. 45">
+      <div class="jump-err" id="jumpErr"></div>
+      <div class="sheet-actions">
+        <button id="jumpCancel">Cancel</button>
+        <button class="go" id="jumpGo">Go</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+   CHAPTER DATA  —  EDIT ONLY THIS SECTION TO ADD CHAPTERS
+   ---------------------------------------------------------------------
+   Copy one { ... } block, paste it after the last one (mind the comma),
+   and fill in your questions. Card format:
+     { n:<question number shown>, q:"the question",
+       opts:["option A","option B","option C","option D"],
+       a:<index of correct answer: 0=A, 1=B, 2=C, 3=D> }
+   ===================================================================== */
+const CHAPTERS = [
+{
+  id:"ch2", name:"Sources of E.M.F.", num:2,
+  cards:[
+    {n:1,  q:'"The mass of an ion liberated at an electrode is directly proportional to the quantity of electricity which passes through the electrolyte." This statement is associated with:', opts:["Webers and Ewings theory","Laplace law","Faraday's laws of Electrolysis","Gauss's theorem"], a:2},
+    {n:2,  q:'For all substances, Chemical equivalent ÷ Electrochemical equivalent equals:', opts:["96500 coulombs","9650 coulombs","965 coulombs","96.5 coulombs"], a:0},
+    {n:3,  q:'The plates of a lead acid battery are made of:', opts:["rolled zinc-copper alloy","cast antimonial lead alloy","perforated nickel cadmium alloy","pressed antimony bismuth alloy"], a:1},
+    {n:4,  q:'In a lead acid battery, separators are provided:', opts:["to reduce tendency for polarisation","to facilitate flow of current","to reduce internal resistance","to avoid internal short circuits"], a:3},
+    {n:5,  q:'Container of a lead acid battery is made of:', opts:["moulded hard rubber","ceramics","celluloid","any of the above"], a:3},
+    {n:6,  q:'Fillers in a lead acid battery are provided:', opts:["to prevent flow of gases","to facilitate flow of gases","to recover acid loss through vapours","all of the above"], a:1},
+    {n:7,  q:'In case of a lead acid battery, during discharging:', opts:["both anode and cathode become PbSO₄","specific gravity of acid increases","voltage of the cells increases","none of the above takes place"], a:0},
+    {n:8,  q:'In a lead acid battery, during charging:', opts:["anode becomes whitish in colour","voltage drops","specific gravity of acid increases","the cell gives out energy"], a:2},
+    {n:9,  q:'The condition of a fully charged lead acid battery can be ascertained by:', opts:["voltage","specific gravity of electrolyte","gassing","any of the above"], a:3},
+    {n:10, q:'The value of specific gravity of acid when a lead acid battery is fully charged is:', opts:["1.285","2.185","2.585","2.9585"], a:0},
+    {n:11, q:'The active materials on the positive and negative plates of a fully charged lead acid battery are:', opts:["pure lead and lead oxide","lead peroxide and lead sulphated","lead peroxide and pure lead","lead sulphate and lead oxide"], a:2},
+    {n:12, q:'A floating battery is one:', opts:["in which battery voltage is equal to charger voltage","in which the current in the circuit is fully supplied by the battery","which gets charged and discharged simultaneously","which supplies current intermittently and also during off cycle gets charged"], a:3},
+    {n:13, q:'Which cell has the reversible chemical reaction?', opts:["Lead acid","Mercury oxide","Carbon zinc","Silver oxide"], a:0},
+    {n:14, q:'Which of the following statements is correct?', opts:["In a Voltaic cell, the anode and cathode are carbon and zinc rod respectively","Leclanche cell suffers from local action and polarisation","Dry cell is basically a Leclanche cell","Edison alkali cell is a primary cell"], a:2},
+    {n:15, q:'During charging, the electrolyte of a lead acid battery becomes:', opts:["stronger","weaker","diluted with water","there is no change in electrolyte"], a:0},
+    {n:17, q:'On ampere hour basis the efficiency of a lead acid battery is in the range:', opts:["90 to 95 percent","80 to 85 percent","70 to 75 percent","60 to 65 percent"], a:0},
+    {n:18, q:'In an Edison cell, the electrolyte used is:', opts:["Sodium chloride","Ammonium sulphate","Potassium hydroxide","Hydrochloric acid"], a:2},
+    {n:19, q:'The life of a lead acid battery is expected to be:', opts:["six month","one year","two to five years","ten to fifteen years"], a:2},
+    {n:20, q:'Ampere-hour efficiency of the battery is:', opts:["60%","70%","80%","90%"], a:3},
+    {n:21, q:'Watt hour efficiency of the battery is:', opts:["85%","75%","70%","66%"], a:1},
+    {n:22, q:'Which of the following statements is NOT correct?', opts:["A primary cell is an electro-chemical cell","After charging, a primary cell can be again put to use","Dry cell is a primary cell","Leclanche cell is used in experiments where constant supply of current is not needed"], a:1},
+    {n:23, q:'The indication of the state of charge of a battery is best given by:', opts:["specific gravity of electrolyte","temperature of electrolyte","colour of electrolyte","level of electrolyte"], a:0},
+    {n:24, q:'Common impurity in battery electrolyte is:', opts:["sodium chloride","iron","lead sulphate","dust"], a:1},
+    {n:25, q:'Open circuit voltage of a fully charged lead-acid cell is:', opts:["1.9 V","2.0 V","2.7 V","2.5 V"], a:2},
+    {n:26, q:'The capacity of storage battery is expressed as:', opts:["the number of recharges it can take","time for which it can be used","the number of cells it contains","ampere hour it can deliver"], a:3},
+    {n:27, q:'On watt hour basis the efficiency of a lead acid battery is in the range:', opts:["90 to 95 percent","80 to 85 percent","70 to 85 percent","60 to 70 percent"], a:2},
+    {n:28, q:'What is the arrangement to get the maximum current in 3 Ω resistance in the case of 24 cells, each of internal resistance 2 ohms?', opts:["12 cells in series with two rows in parallel","3 cells in series with three rows in parallel","6 cells in series with four rows in parallel","4 cells in series with six rows in parallel"], a:2},
+    {n:29, q:'Trickle charge is required for:', opts:["lead acid batteries","nickel iron cells","primary cells","all of the above"], a:3},
+    {n:30, q:'A wet battery cover in case of lead acid battery indicates:', opts:["excessive gassing during charging","leaky seals at covers","overfilling of the battery","any of the above"], a:3},
+    {n:31, q:'Internal resistance of a battery is due to:', opts:["resistance of electrolyte","resistance of electrodes","surface contact resistance","all of the above"], a:3},
+    {n:32, q:'The e.m.f. of a storage battery depends upon:', opts:["size of the electrodes","shape of the cell","nature of electrodes","all of the above"], a:2},
+    {n:33, q:'The internal resistance of a dry cell is of the order of:', opts:["0.2 to 0.4 ohm","1 to 1.5 ohm","2 to 5 ohms","1 to 15 ohms"], a:0},
+    {n:35, q:'When n cells each of emf E volts and internal resistance r ohms are connected in parallel, the strength of the current i is given by:', opts:["nE / (r + R)","E / (n + Rr)","E / (R + r/n)","E / (R + n/r)"], a:2},
+    {n:36, q:'Proper charging rate for lead acid battery is:', opts:["½ of rated ampere hour capacity","⅓ of rated ampere hour capacity","¼ of rated ampere hour capacity","⅛ of rated ampere hour capacity"], a:3},
+    {n:37, q:'For a group of cells when internal resistance of the group is equal to the external resistance due to load, the battery will give:', opts:["maximum voltage","maximum current","maximum energy","maximum ampere-hours"], a:1},
+    {n:38, q:'One ampere hour charge is equivalent to:', opts:["36 coulombs","360 coulombs","3600 coulombs","36000 coulombs"], a:2},
+    {n:39, q:'When water is added to sulphuric acid:', opts:["colour of acid changes","lot of heat is generated","water starts boiling","acid particles get separated"], a:1},
+    {n:40, q:'The electro-chemical reactions are not reversible in case of:', opts:["primary cells only","secondary cells","both primary and secondary cells","none"], a:0},
+    {n:41, q:'The energy in a lead acid battery is stored in the form of:', opts:["electrostatic charge","non-flowing current","chemical energy","nuclear energy"], a:2},
+    {n:42, q:'The electrolyte in a Leclanche cell is:', opts:["dilute hydrochloric acid","aqueous solution of ammonium chloride","pyrogallic acid","lead stearate"], a:1},
+    {n:43, q:'The electrode for a battery must be:', opts:["a good conductor of electricity","a bad conductor of electricity","a semi-conductor","an insulator"], a:0},
+    {n:44, q:'For a discharged lead-acid battery, the specific gravity of the acid is:', opts:["0.9","1.0","1.12","1.3"], a:2},
+    {n:45, q:'In a lead accumulator, the plates are placed close to each other, as:', opts:["it makes the lead accumulator sturdy","it increases the e.m.f. of the accumulator","it decreases the internal resistance of the accumulator","it increases the life span of the accumulator"], a:2},
+    {n:46, q:'Even when not in use, the self-discharge of a battery occurs at the rate of:', opts:["0.5 to 1% of rated capacity per hour","0.5 to 1% of rated capacity per day","0.5 to 1% of rated capacity per week","0.5 to 1% of rated capacity per month"], a:1},
+    {n:47, q:'The specific gravity of acid is checked with the help of a:', opts:["hygrometer","lectometer","hydrometer","cell tester"], a:2},
+    {n:50, q:'An energy source has A terminal marked + and B terminal marked −. Which type of source description is standard? (V(t)=10cos(3t+π/6)) — the terminal marking indicates:', opts:["the source polarity reference","B is positive","voltage is always zero","polarity reverses each cycle"], a:1},
+    {n:52, q:'A lead accumulator of 20 ampere hour — which statement is NOT correct? It can supply:', opts:["20 A of current for 20 hours","1 A of current for 20 hours","20 A of current for 1 hour","0.1 A of current for 200 hours"], a:0},
+    {n:53, q:'The term trickle charge is associated with:', opts:["dry cells","silver zinc batteries","lead acid batteries","nickel iron batteries"], a:2},
+    {n:54, q:'When the battery is being charged, the terminal voltage decreases with:', opts:["increasing charging rate","increasing state of charge","increasing temperature","all of the above"], a:2},
+    {n:55, q:'When the battery is being discharged, the terminal voltage decreases with:', opts:["decreasing discharge rate","decreasing state of charge","decreasing temperature","none of the above"], a:0},
+    {n:56, q:'The ampere hour capacity of a battery used on cars is:', opts:["5–10 Ah","30–60 Ah","100–150 Ah","200–250 Ah"], a:1},
+    {n:57, q:'The ampere hour capacity of a battery used on trucks is:', opts:["5–10 Ah","30–60 Ah","100–150 Ah","200–250 Ah"], a:2},
+    {n:58, q:'Which battery is used in aeroplanes?', opts:["Dry cell battery","Lead acid battery","Edison cell","None of the above"], a:3},
+    {n:59, q:'Which test is used to ascertain whether the battery plates are defective or not?', opts:["Cadmium test","High discharge test","Open volt test","Specific gravity test"], a:0},
+    {n:60, q:'Which of the following is the common voltage of automobile batteries?', opts:["2 V","10 V","12 V","25 V"], a:0},
+    {n:61, q:'Cells are connected in parallel to:', opts:["increase the voltage output","increase the internal resistance","decrease the current capacity","increase the current capacity"], a:3},
+    {n:62, q:'Five carbon zinc cells in series have an output of:', opts:["1.5 V","5.0 A","7.5 V","10.0 A"], a:2},
+    {n:65, q:'For a voltage source when internal resistance s = load resistance R_L, which of the following is maximum?', opts:["Power in R_L","Current","Voltage across R_L","Efficiency of the circuit"], a:0},
+    {n:66, q:'A constant voltage source has:', opts:["low internal resistance","high internal resistance","minimum efficiency","minimum current capacity"], a:0},
+    {n:67, q:'Which of the following is false?', opts:["A carbon-zinc cell has unlimited shelf life","A lead-acid cell can be recharged","A storage cell has an irreversible chemical reaction","A primary cell has an irreversible chemical reaction"], a:0},
+    {n:68, q:'The current in a chemical cell is a movement of:', opts:["positive hole charges","positive ions only","negative ions only","positive and negative ions"], a:3},
+    {n:69, q:'Cells are connected in series to:', opts:["increase the voltage output","decrease the voltage output","decrease the internal resistance","increase the current capacity"], a:0},
+    {n:70, q:'Which of the following is a dry storage cell?', opts:["Mercury cell","Nickel-cadmium cell","Carbon-zinc cell","Edison cell"], a:1},
+    {n:71, q:'A graph of terminal voltage of battery as a function of the current drawn from it for various external resistances is plotted. Which statement is valid?', opts:["The graph will have parabolic shape","The graph will be straight line parallel to current axis","The graph will pass through the origin","The slope of the graph will be equal to the internal resistance of the battery"], a:3},
+    {n:72, q:'p number of cells connected in series; q such series combinations in parallel; external resistance R; internal resistance of each cell r. Maximum current when:', opts:["R = 4","R = pr","R = q·r/p","R = p·r/q"], a:3},
+    {n:73, q:'Two batteries having unequal emf:', opts:["cannot be connected in parallel","cannot be connected in series","can be connected in series only","may be connected in parallel or series"], a:2},
+    {n:74, q:'Two batteries, each having emf E, internal resistances r₁ and r₂, connected in series to external variable resistor R. Terminal voltage across first cell (r₁) will be zero when:', opts:["R = 0","R = r₁ + r₂","R = (r₁ + r₂)/2","R = r₁ − r₂"], a:3},
+    {n:75, q:'In the above case the terminal voltage across the second cell will be:', opts:["E(r₁ − r₂)","E(r₁ + r₂)","E(1 − r₂/r₁)","E(1 − r₁/r₂)"], a:2},
+    {n:76, q:'Which of the following material is used in solar cells?', opts:["Silicon","Barium","Selenium","Silver"], a:0},
+    {n:77, q:'The efficiency of a solar cell can be expected in the range:', opts:["10 to 15 percent","25 to 35 percent","45 to 60 percent","70 to 85 percent"], a:0},
+    {n:78, q:'The output voltage of a silver oxide cell is:', opts:["1.1 volt","1.2 volt","1.5 volt","1.71 volt"], a:2},
+    {n:79, q:'In a lithium cell the positive electrode is made of:', opts:["zinc dust","stainless steel","spongy iron","carbon"], a:3},
+    {n:80, q:'Which efficiency of a battery is more than the remaining?', opts:["Watt hour efficiency","Ampere hour efficiency","Overall efficiency","(A),(B),(C) have the same value"], a:1},
+    {n:81, q:'While comparing alkaline batteries with lead acid batteries, which can be cited as the advantage of the former over the latter?', opts:["Low initial cost","Electrical robustness","High output voltage","All of the above"], a:1},
+    {n:82, q:'A fuel cell converts _____ energy into electrical energy:', opts:["chemical","mechanical","solar","magnetic"], a:0},
+    {n:83, q:'In a lead-acid cell, hydrogen is liberated at:', opts:["negative plate","positive plate","both negative and positive plates","none of the plates"], a:0},
+    {n:84, q:'In a lead acid cell PbSO₄ is formed during:', opts:["charging only","discharging only","both during charging as well as discharging","neither during charging nor discharging"], a:1},
+    {n:97, q:'The reference junction of a thermocouple is maintained at:', opts:["0 K","0 °F","0 °C","room temperature"], a:2},
+    {n:98, q:'In nickel-iron cell the electrolyte is:', opts:["dilute sulphuric acid","dilute potassium hydroxide","dilute ammonium hydroxide","dilute sodium chloride solution"], a:1},
+    {n:99, q:'In Edison-cell the concentration of electrolyte:', opts:["increases during charging","decreases during charging","increase during discharging","remains unaltered"], a:3},
+    {n:100,q:'In Edison cell the positive plates consist of:', opts:["Nickel hydroxide","Iron","Pure nickel","Spongy iron"], a:0},
+    {n:101,q:'The electrolyte used in nickel cadmium cell is:', opts:["Sodium chloride solution","Sulphuric acid (dilute)","Potassium hydroxide","Ammonium hydroxide"], a:2},
+    {n:102,q:'The efficiency of a modern accumulator is of the order of:', opts:["100%","70%","50%","33%"], a:1},
+    {n:103,q:'A cell which is used as a voltage reference source for instrument calibration is:', opts:["mercury-cadmium cell","solar cells","dry cell","nickel-cadmium cell"], a:0},
+    {n:116,q:'Which of the following is not a primary cell?', opts:["Carbon-zinc","Silver-oxide","Silver zinc","Nickel-cadmium"], a:3},
+    {n:117,q:'The current flowing between electrodes inside a lead-acid battery is:', opts:["electron current","proton current","ionization current","polarization current"], a:3},
+    {n:123,q:'Choose the correct relation:', opts:["Potential = Charge × capacity","Charge = Potential/capacity","Potential = Charge/capacity","Capacity = Potential × charge"], a:2},
+    {n:124,q:'It has been found that internal resistance of a cell is comparable to external resistance. To have maximum current through the external resistance we should combine the cells in:', opts:["series","parallel","series or parallel","mixed"], a:3},
+    {n:125,q:'When the internal resistance of a cell is large compared to the external resistance in the circuit, then high current can flow through the external resistance by grouping the cells:', opts:["as in series","in parallel","in either series or parallel","mixed"], a:1},
+    {n:126,q:'The current flow through electrolyte is due to the movement of:', opts:["electrons","protons","holes","ions"], a:3},
+    {n:127,q:'The condition whether a lead-acid battery on charge is fully charged or not can be ascertained from any of the following EXCEPT:', opts:["specific gravity","gasing","colour of plates","colour of electrode"], a:2},
+    {n:128,q:'The greater the internal resistance of a cell:', opts:["the lesser the emf","the lesser the terminal voltage","the greater the emf","the greater the terminal voltage"], a:1},
+    {n:129,q:'The plates of lead acid storage battery are most likely to be short circuited if:', opts:["the electrolyte evaporates","the battery is charged too slowly","sediments collect at the bottom of the battery","too much water is added"], a:2},
+    {n:130,q:'To keep the terminals of a lead acid storage battery free from corrosion, it is advisable to:', opts:["apply petroleum jelly","drill holes on the terminal top","keep the electrolyte level low","charge the battery at frequent intervals"], a:0},
+    {n:131,q:'When cells are connected in parallel grouping, then:', opts:["Current-capacity decreases","Current capacity increases","EMF increases","EMF decreases"], a:1},
+    {n:132,q:'For cadmium plating cathode current density is usually restricted to:', opts:["1 to 3 amperes/dm²","5 to 10 amperes/dm²","10 to 15 amperes/dm²","25 amperes/dm²"], a:0},
+    {n:133,q:'Out of the following which one will have the lowest cathode current density?', opts:["Zinc plating","Cadmium plating","Silver plating","—"], a:2},
+    {n:134,q:'Out of the following which one will have the highest anode current density?', opts:["Zinc plating","Cadmium plating","Silver plating","—"], a:0},
+    {n:136,q:'For zinc plating the anode current density is usually:', opts:["0.5 to 1 A/dm²","2 to 4 A/dm²","5 to 10 A/dm²","10 to 20 A/dm²"], a:1},
+    {n:137,q:'Electrolyte for silver plating is:', opts:["double cyanide of silver and potassium solution","dilute sulphuric acid","potassium nitrate solution","any of the above"], a:0},
+    {n:138,q:'For nickel plating the electrolyte consists of:', opts:["double sulphate of nickel and ammonium","double cyanide of potassium and silver solution","cupronickel sulphate","any of the above"], a:0},
+    {n:139,q:'For cadmium plating electrolyte used is:', opts:["sodium cyanide, cadmium and caustic soda","cadmium hexal meta phosphate","cadmium sulphate and sulphuric acid","any of the above"], a:0},
+    {n:140,q:'Zinc plating solution consists of:', opts:["Zinc, sodium cyanide and sodium hydroxide solution","Zinc chloride and ammonium hydroxide","Zinc sulphate and dilute sulphuric acid","any of the above"], a:0},
+    {n:141,q:'A external resistance R is connected to a cell of internal resistance r, then the current is maximum when:', opts:["R < r","R > r","R = r","none of the above"], a:2},
+    {n:142,q:'EMF of cell depends upon:', opts:["External resistance","Internal resistance","Electrolyte","Area of plates inside electrolyte"], a:2},
+    {n:143,q:'Voltage required for barrel plating is usually:', opts:["3 to 5 volts","6 to 16 volts","20 to 50 volts","50 to 200 volts"], a:1},
+    {n:144,q:'A cell of EMF E is connected across an external resistance r. Terminal voltage is V. The internal resistance b of the cell is given by:', opts:["(E − V) r","2·((E−V)/V)·r","((E−V)/E)·r","((E−V)/V)·r"], a:3},
+    {n:145,q:'Which of the following is plated by barrel plating?', opts:["All pins","Gems clips","Steel balls","All of the above"], a:3},
+    {n:147,q:'Which laws find application in electrolysis?', opts:["Coulomb's laws","Van Allen's laws","Faraday's laws","Ohm's laws"], a:2},
+    {n:148,q:'During electroplating the weight of a substance deposited depends on:', opts:["quantity of electricity","shape of the article","room temperature","atmospheric humidity"], a:0},
+    {n:149,q:'During electroplating the amounts of different substances liberated by same quantity of electricity are proportional to their:', opts:["atomic weights","atomic numbers","chemical equivalents","valency"], a:2},
+    {n:150,q:'Electro-chemical equivalent is usually expressed in:', opts:["milligrams per volt","milligrams per kVA","milligrams per kW","milligrams per coulomb"], a:3},
+    {n:151,q:'Current efficiency in electroplating is usually:', opts:["99%","90 to 98 percent","70 to 80 percent","50 to 60 percent"], a:1},
+    {n:152,q:'Energy efficiency during electroplating is usually in the range:', opts:["50 to 80%","80 to 85%","80 to 95%","90 to 99%"], a:0},
+    {n:153,q:'Zinc, cadmium and lead coating is generally provided for:', opts:["decoration","electrical contacts","corrosion","all of the above"], a:2},
+    {n:154,q:'Recommended coating for food containers is:', opts:["zinc","cadmium","tin","brass"], a:2},
+    {n:155,q:'Coating usually recommended for electrical contacts is that of:', opts:["chromium","tin","silver","gold"], a:2},
+    {n:156,q:'Which coating is usually recommended for reflectors?', opts:["Rhodium coating","Cadmium coating","Lead coating","Brass coating"], a:0},
+    {n:157,q:'Galvanizing is the coating of:', opts:["lead","chromium","brass","zinc"], a:3},
+    {n:158,q:'Coating generally recommended for hard surfacing is generally:', opts:["chromium plating","copper plating","lead plating","none of the above"], a:0},
+    {n:159,q:'The best instrument for the measurement of emf of a cell is:', opts:["Voltmeter","ammeter","potentiometer","wheat stone bridge"], a:2},
+    {n:160,q:'The temperature recommended for bronze plating is usually:', opts:["10 to 20°C","20 to 35°C","40 to 60°C","70 to 80°C"], a:3},
+    {n:161,q:'All of the following metals are generally deposited for protection EXCEPT:', opts:["Zinc","Tin","Nickel","Gold"], a:3},
+    {n:162,q:'Highest current density is usually recommended for:', opts:["bronze plating","chromium plating","tin plating","cadmium plating"], a:1},
+    {n:163,q:'Lowest current density is generally recommended for the plating of:', opts:["Cadmium","Chromium","Bronze","Silver"], a:3},
+    {n:164,q:'For chromium plating the current density is usually:', opts:["30 to 80 amps/m²","100 to 200 amps/m²","300 to 800 amps/m²","1500 to 2500 amps/m²"], a:3},
+    {n:165,q:'Which of the following coating is used for bearing surfaces?', opts:["Lead coating","Zinc coating","Iron coating","Gold coating"], a:0},
+    {n:166,q:'Which metal is deposited for electro-forming?', opts:["Nickel","Chromium","Silver","Iron"], a:3},
+    {n:167,q:'Which of the following metal is deposited to provide hard wearing surface?', opts:["Chromium","Bronze","Zinc","Nickel"], a:0},
+    {n:168,q:'Which of the following metal is deposited to provide an undercoat for chromium?', opts:["Copper","Silver","Bronze","Lead"], a:2},
+    {n:169,q:'Silver coating is provided for:', opts:["protective purposes","decorative purposes","bearing surfaces","all of the above"], a:3},
+    {n:170,q:'The character of metal deposited is affected by:', opts:["current density","metal concentration","temperature","all of the above"], a:3},
+    {n:172,q:'Oils and greases from surfaces to be coated can be removed by the help of:', opts:["soaps","hot alkali solutions","solvents like C.T.C. and gasoline","any of the above"], a:3},
+    {n:173,q:'Rust, scale and oxides can be removed with the help of:', opts:["various acids","alkali salt solutions","mechanical abrasion","any of the above"], a:3},
+    {n:174,q:'Which of the following substance when added to electrolyte promotes smooth deposition?', opts:["Gelatine","Albumen","Glucose","Any of the above"], a:3},
+    {n:175,q:'The character of metal deposited is affected by:', opts:["structure of the metal","surface preparation","metal-ion concentration","all of the above"], a:3},
+    {n:176,q:'Addition of which of the following substance in electrolyte helps in producing bright finish?', opts:["Dextrol","Phenol","Glycerine","Any of the above"], a:3},
+    {n:177,q:'Uniform thickness of plating on irregular surface is assisted by:', opts:["keeping the anode and cathode farther apart","keeping the anode and cathode closer","using high current densities","constantly agitating the electrolyte"], a:0},
+    {n:178,q:'Aluminium surface in contact with air is always cover with a thin layer of:', opts:["nitride","carbide","hydrate","oxide"], a:3},
+    {n:179,q:'Aluminium is produced from bauxite by:', opts:["electrolytic process","oxidation","rotating","froth flotation"], a:0},
+    {n:180,q:'Highest purity copper is obtained by:', opts:["smelting","roasting","electroplating","any of the above processes"], a:2}
+  ]
+}
+];
+/* ===================== END OF CHAPTER DATA ===================== */
+
+const LETTERS = ['A','B','C','D'];
+let chapIdx = 0, idx = 0;
+
+const home       = document.getElementById('home');
+const deck       = document.getElementById('deck');
+const chapterList= document.getElementById('chapterList');
+const deckTitle  = document.getElementById('deckTitle');
+const card       = document.getElementById('card');
+const qnumEl     = document.getElementById('qnum');
+const qtextEl    = document.getElementById('qtext');
+const optsEl     = document.getElementById('options');
+const badgeEl    = document.getElementById('ansBadge');
+const ansTxt     = document.getElementById('ansText');
+const curEl      = document.getElementById('cur');
+const totalEl    = document.getElementById('total');
+const fillEl     = document.getElementById('fill');
+const prevBtn    = document.getElementById('prevBtn');
+const nextBtn    = document.getElementById('nextBtn');
+const backBtn    = document.getElementById('backBtn');
+const jumpBtn    = document.getElementById('jumpBtn');
+const jumpOverlay= document.getElementById('jumpOverlay');
+const jumpInput  = document.getElementById('jumpInput');
+const jumpErr    = document.getElementById('jumpErr');
+const notice     = document.getElementById('notice');
+
+function buildHome(){
+  chapterList.innerHTML='';
+  CHAPTERS.forEach((ch,i)=>{
+    const b=document.createElement('button');
+    b.className='ch-card';
+    b.innerHTML =
+      '<div class="ch-index">CH '+ch.num+'</div>'+
+      '<div class="ch-body">'+
+        '<div class="ch-name">HANDA – '+ch.name+'</div>'+
+        '<div class="ch-meta">'+ch.cards.length+' cards</div>'+
+      '</div>'+
+      '<div class="ch-arrow">›</div>';
+    b.onclick=()=>openChapter(i);
+    chapterList.appendChild(b);
+  });
+}
+
+function openChapter(i){
+  chapIdx=i; idx=0;
+  home.classList.add('hidden');
+  deck.classList.remove('hidden');
+  render();
+}
+function goHome(){
+  deck.classList.add('hidden');
+  home.classList.remove('hidden');
+}
+
+function render(){
+  const ch=CHAPTERS[chapIdx];
+  const c=ch.cards[idx];
+  card.classList.remove('flipped');
+  deckTitle.textContent='HANDA – '+ch.name;
+  totalEl.textContent=ch.cards.length;
+  curEl.textContent=idx+1;
+  fillEl.style.width=((idx+1)/ch.cards.length*100)+'%';
+  qnumEl.textContent='Q'+c.n;
+  qtextEl.textContent=c.q;
+  optsEl.innerHTML='';
+  c.opts.forEach((o,i)=>{
+    const li=document.createElement('li');
+    li.className='opt';
+    li.innerHTML='<span class="lbl">'+LETTERS[i]+'</span><span>'+o+'</span>';
+    optsEl.appendChild(li);
+  });
+  badgeEl.textContent=LETTERS[c.a];
+  ansTxt.textContent=c.opts[c.a];
+  prevBtn.disabled=idx===0;
+  nextBtn.textContent=idx===ch.cards.length-1?'Restart ↻':'Next ›';
+}
+
+function revealOnFlip(){
+  const c=CHAPTERS[chapIdx].cards[idx];
+  optsEl.querySelectorAll('.opt').forEach((li,i)=>li.classList.toggle('correct',i===c.a));
+}
+
+card.addEventListener('click',()=>{
+  const flipping=!card.classList.contains('flipped');
+  card.classList.toggle('flipped');
+  if(flipping) revealOnFlip();
+});
+prevBtn.onclick=e=>{e.stopPropagation(); if(idx>0){idx--; notice.classList.add('hidden'); render();}};
+nextBtn.onclick=e=>{e.stopPropagation(); const ch=CHAPTERS[chapIdx]; idx=idx<ch.cards.length-1?idx+1:0; notice.classList.add('hidden'); render();};
+backBtn.onclick=()=>{notice.classList.add('hidden'); goHome();};
+
+/* jump-to-question */
+jumpBtn.onclick=()=>{jumpOverlay.classList.remove('hidden'); jumpErr.textContent=''; jumpInput.value=''; setTimeout(()=>jumpInput.focus(),50);};
+document.getElementById('jumpCancel').onclick=()=>jumpOverlay.classList.add('hidden');
+jumpOverlay.addEventListener('click',e=>{if(e.target===jumpOverlay) jumpOverlay.classList.add('hidden');});
+function doJump(){
+  const ch=CHAPTERS[chapIdx];
+  const want=parseInt(jumpInput.value,10);
+  if(isNaN(want)){jumpErr.textContent='Enter a number.';return;}
+  // exact match?
+  let pos=ch.cards.findIndex(c=>c.n===want);
+  if(pos!==-1){
+    idx=pos; notice.classList.add('hidden'); render();
+    jumpOverlay.classList.add('hidden'); return;
+  }
+  // no exact match: find the next available question number
+  let nextPos=ch.cards.findIndex(c=>c.n>want);
+  if(nextPos===-1) nextPos=ch.cards.length-1; // past the end → last card
+  idx=nextPos;
+  render();
+  notice.innerHTML='<span>Q<b>'+want+'</b> wasn\u2019t added (likely a calculation question). Showing the next one, Q<b>'+ch.cards[idx].n+'</b>.</span>';
+  notice.classList.remove('hidden');
+  jumpOverlay.classList.add('hidden');
+}
+document.getElementById('jumpGo').onclick=doJump;
+jumpInput.addEventListener('keydown',e=>{if(e.key==='Enter') doJump();});
+
+/* swipe */
+const stage=document.querySelector('.stage');
+let sx=0;
+stage.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+stage.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-sx;
+  if(Math.abs(dx)<50) return;
+  const ch=CHAPTERS[chapIdx];
+  if(dx<0 && idx<ch.cards.length-1){idx++; notice.classList.add('hidden'); render();}
+  if(dx>0 && idx>0){idx--; notice.classList.add('hidden'); render();}
+});
+
+buildHome();
+</script>
+</body>
+</html>
